@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AutoHeal | SRE Core</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #050505; --panel: #0a0f0a; --green: #0f0; --red: #f00; --dim: #333; }
+        body { background: var(--bg); color: var(--green); font-family: 'JetBrains Mono', monospace; margin: 0; padding: 20px; height: 100vh; overflow: hidden; display: grid; grid-template-rows: auto 1fr; gap: 20px; }
+        
+        /* Header */
+        header { border-bottom: 1px solid var(--dim); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; }
+        .badge { background: #111; padding: 5px 10px; border: 1px solid var(--green); font-size: 0.8rem; }
+        
+        /* Main Grid */
+        .grid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: 100%; }
+        
+        /* Status Panel */
+        .status-panel { background: var(--panel); border: 1px solid var(--dim); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; transition: all 0.3s; }
+        .status-panel.critical { border-color: var(--red); box-shadow: 0 0 30px rgba(255, 0, 0, 0.2); }
+        
+        .ring { width: 120px; height: 120px; border: 4px solid var(--dim); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3rem; margin-bottom: 20px; position: relative; }
+        .ring::after { content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px; border-radius: 50%; border: 4px solid transparent; border-top-color: var(--green); animation: spin 2s linear infinite; }
+        
+        .critical .ring { border-color: #500; color: var(--red); }
+        .critical .ring::after { border-top-color: var(--red); animation-duration: 0.5s; }
+
+        /* Logs Panel */
+        .logs-panel { background: #000; border: 1px solid var(--dim); padding: 15px; overflow-y: auto; font-size: 0.9rem; position: relative; }
+        .log-entry { margin-bottom: 8px; opacity: 0.8; }
+        .log-entry.err { color: var(--red); font-weight: bold; }
+        .log-entry.sys { color: #888; }
+        .log-entry.ai { color: #0ff; }
+
+        /* Action Modal */
+        #actionModal { display: none; position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); width: 400px; background: rgba(0,0,0,0.9); border: 1px solid var(--red); padding: 20px; text-align: center; backdrop-filter: blur(5px); }
+        .fix-btn { background: var(--red); color: white; border: none; padding: 15px 30px; font-family: inherit; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; width: 100%; margin-top: 15px; }
+        .fix-btn:hover { background: #b00; }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🛡️ AutoHeal <span style="font-size:0.7em; opacity:0.5;">v2.0</span></h1>
+        <div class="badge">MOTIA RUNTIME: CONNECTED</div>
+    </header>
+
+    <div class="grid">
+        <div class="status-panel" id="statusPanel">
+            <div class="ring" id="ring">OK</div>
+            <h2 id="statusText">SYSTEM OPTIMAL</h2>
+            <div style="font-size: 0.8rem; opacity: 0.5; margin-top: 10px;">UPTIME: 99.9%</div>
+        </div>
+        <div class="logs-panel" id="terminal">
+            <div class="log-entry sys">> INITIALIZING SUBSYSTEMS...</div>
+            <div class="log-entry sys">> CONNECTED TO WEBSOCKET STREAM...</div>
+        </div>
+    </div>
+
+    <div id="actionModal">
+        <h3 style="color:var(--red); margin:0;">⚠️ ANOMALY DETECTED</h3>
+        <p style="font-size:0.9rem; margin: 10px 0;">ERROR: <span id="errorMsg" style="color:white;">...</span></p>
+        <div style="border-top:1px solid #333; padding-top:10px; text-align:left;">
+            <div style="color: #0ff; font-size: 0.8rem;">🤖 AI PROPOSAL (CONFIDENCE: <span id="confVal">0%</span>)</div>
+            <div style="font-size: 1.2rem; margin-top: 5px;">> <span id="fixMsg">RESTART</span></div>
+        </div>
+        <button class="fix-btn" onclick="executeFix()">AUTHORIZE COUNTERMEASURE</button>
+    </div>
+
+    <script>
+        // ✅ CORRECT: Connect to Motia Streams API (polling-based for now)
+        const terminal = document.getElementById('terminal');
+        let currentIncidentId = null;
+        let lastChecked = Date.now();
+
+        function log(msg, type='sys') {
+            const div = document.createElement('div');
+            div.className = `log-entry ${type}`;
+            div.innerHTML = `<span style="opacity:0.5">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Poll the incidents stream for updates
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/streams/incidents/active');
+                const data = await response.json();
+                
+                // Check if there's a new incident
+                for (const [id, incident] of Object.entries(data)) {
+                    if (incident.timestamp > lastChecked && incident.status === 'pending_approval') {
+                        lastChecked = incident.timestamp;
+                        currentIncidentId = id;
+                        
+                        // Trigger Alarm UI
+                        document.getElementById('statusPanel').classList.add('critical');
+                        document.getElementById('ring').innerText = "!";
+                        document.getElementById('statusText').innerText = "CRITICAL FAILURE";
+                        document.getElementById('statusText').style.color = "var(--red)";
+                        
+                        // Populate Modal
+                        document.getElementById('errorMsg').innerText = incident.error;
+                        document.getElementById('fixMsg').innerText = incident.fix;
+                        document.getElementById('confVal').innerText = Math.round(incident.confidence * 100) + "%";
+                        document.getElementById('actionModal').style.display = 'block';
+
+                        log(`🚨 CRITICAL ALERT: ${incident.error}`, 'err');
+                        log(`🤖 AI AGENT: Computing solution...`, 'ai');
+                        setTimeout(() => log(`💡 AI AGENT: Proposed Fix → ${incident.fix}`, 'ai'), 500);
+                    }
+                    
+                    // Check if incident was resolved
+                    if (incident.status === 'resolved' && document.getElementById('actionModal').style.display !== 'none') {
+                        // Reset UI
+                        document.getElementById('statusPanel').classList.remove('critical');
+                        document.getElementById('ring').innerText = "OK";
+                        document.getElementById('statusText').innerText = "SYSTEM OPTIMAL";
+                        document.getElementById('statusText').style.color = "var(--green)";
+                        document.getElementById('actionModal').style.display = 'none';
+                        
+                        log(`✅ SUCCESS: Countermeasure Applied. System stable.`, 'sys');
+                    }
+                }
+            } catch (err) {
+                console.error('Stream poll error:', err);
+            }
+        }, 1000);
+
+        async function executeFix() {
+            if(!currentIncidentId) return;
+            log(`👤 USER: Authorizing fix sequence...`, 'sys');
+            
+            await fetch('/admin/fix', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ incidentId: currentIncidentId })
+            });
+        }
+        
+        log('✨ AutoHeal Dashboard v2.0 Initialized', 'sys');
+        log('🔍 Monitoring 127.0.0.1:3000/service/health every 5s', 'sys');
+    </script>
+</body>
+</html>

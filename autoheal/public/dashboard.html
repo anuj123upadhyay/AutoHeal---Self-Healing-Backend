@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoHeal Dashboard | Real-time Monitoring</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a1f35;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --border: #374151;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #0f1419 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .logo-text h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-card);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            border: 1px solid var(--border);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.degraded {
+            background: var(--accent-yellow);
+        }
+
+        .status-indicator.critical {
+            background: var(--accent-red);
+            animation: pulse-fast 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-title {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .stat-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-change {
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .stat-change.positive {
+            color: var(--accent-green);
+        }
+
+        .stat-change.negative {
+            color: var(--accent-red);
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Activity Feed */
+        .activity-feed {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            border-left: 2px solid var(--border);
+            margin-left: 0.5rem;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .activity-item:hover {
+            background: rgba(59, 130, 246, 0.05);
+            border-left-color: var(--accent-blue);
+        }
+
+        .activity-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 1.25rem;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+        }
+
+        .activity-item.error::before {
+            background: var(--accent-red);
+            animation: pulse-fast 1s infinite;
+        }
+
+        .activity-item.success::before {
+            background: var(--accent-green);
+        }
+
+        .activity-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 70px;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-desc {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .activity-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+
+        .badge-db {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .badge-memory {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-purple);
+        }
+
+        .badge-network {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--accent-yellow);
+        }
+
+        /* AI Status */
+        .ai-status {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .ai-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .ai-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .ai-info h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .ai-info p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .confidence-bar {
+            background: var(--bg-secondary);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+            transition: width 0.5s;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            gap: 0.5rem;
+            padding: 1rem 0;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s;
+            position: relative;
+        }
+
+        .chart-bar:hover::after {
+            content: attr(data-value);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-blue);
+        }
+
+        /* Incident Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">🛡️</div>
+            <div class="logo-text">
+                <h1>AutoHeal</h1>
+                <p>Intelligent Self-Healing Platform</p>
+            </div>
+        </div>
+        <div class="status-badge">
+            <div class="status-indicator" id="systemStatus"></div>
+            <span id="statusText">System Healthy</span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Total Incidents</span>
+                    <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: var(--accent-blue);">📊</div>
+                </div>
+                <div class="stat-value" id="totalIncidents">0</div>
+                <div class="stat-change positive">
+                    <span>↓</span>
+                    <span>Real-time monitoring</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Resolved</span>
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green);">✅</div>
+                </div>
+                <div class="stat-value" id="resolvedCount">0</div>
+                <div class="stat-change positive">
+                    <span>↑</span>
+                    <span id="resolvedPercent">0%</span>
+                    <span>success rate</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Pending</span>
+                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--accent-yellow);">⏳</div>
+                </div>
+                <div class="stat-value" id="pendingCount">0</div>
+                <div class="stat-change">
+                    <span>Awaiting resolution</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">AI Confidence</span>
+                    <div class="stat-icon" style="background: rgba(139, 92, 246, 0.1); color: var(--accent-purple);">🤖</div>
+                </div>
+                <div class="stat-value" id="avgConfidence">0%</div>
+                <div class="stat-change positive">
+                    <span>↑</span>
+                    <span>Average accuracy</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Activity Feed -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span>📡</span>
+                        <span>Live Activity Feed</span>
+                    </div>
+                    <div class="loading" id="feedLoading"></div>
+                </div>
+                <div class="activity-feed" id="activityFeed">
+                    <div class="activity-item">
+                        <div class="activity-time">--:--:--</div>
+                        <div class="activity-content">
+                            <div class="activity-title">Initializing...</div>
+                            <div class="activity-desc">Connecting to real-time feed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Status -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span>🧠</span>
+                        <span>AI Agent Status</span>
+                    </div>
+                </div>
+                <div class="ai-status">
+                    <div class="ai-card">
+                        <div class="ai-header">
+                            <div class="ai-avatar">🐍</div>
+                            <div class="ai-info">
+                                <h3>Python AI Agent</h3>
+                                <p>Analyzing incidents</p>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                            Average Confidence
+                        </div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="aiConfidence" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--bg-secondary); border-radius: 8px; padding: 1rem; border: 1px solid var(--border);">
+                        <h4 style="font-size: 0.875rem; margin-bottom: 0.75rem; color: var(--text-secondary);">Incident Types</h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.875rem;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>🔵 Database</span>
+                                <span id="dbCount">0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>🟣 Memory</span>
+                                <span id="memCount">0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>🟡 Network</span>
+                                <span id="netCount">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--bg-secondary); border-radius: 8px; padding: 1rem; border: 1px solid var(--border);">
+                        <h4 style="font-size: 0.875rem; margin-bottom: 0.75rem; color: var(--text-secondary);">Recent AI Decisions</h4>
+                        <div id="recentFixes" style="font-size: 0.75rem; color: var(--text-secondary);">
+                            Waiting for incidents...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Incident History Chart -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <span>📈</span>
+                    <span>Incident History (Last 10 Minutes)</span>
+                </div>
+            </div>
+            <div class="chart-container" id="incidentChart"></div>
+        </div>
+    </div>
+
+    <!-- Incident Modal -->
+    <div class="modal" id="incidentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-icon">⚠️</div>
+                <div>
+                    <h2 style="font-size: 1.25rem; margin-bottom: 0.25rem;">Incident Detected</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem;">AI has proposed a fix</p>
+                </div>
+            </div>
+            
+            <div style="background: var(--bg-secondary); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">ERROR</div>
+                <div id="modalError" style="font-size: 0.875rem; font-weight: 500;"></div>
+            </div>
+
+            <div style="background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; padding: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <span>🤖</span>
+                    <span style="font-size: 0.875rem; font-weight: 600;">AI Recommendation</span>
+                </div>
+                <div id="modalFix" style="font-size: 1rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 0.75rem;"></div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                    Confidence: <span id="modalConfidence" style="color: var(--accent-green); font-weight: 600;"></span>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Dismiss</button>
+                <button class="btn btn-primary" onclick="executeFix()">Execute Fix</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let incidents = [];
+        let chartData = Array(10).fill(0);
+        let currentIncident = null;
+        let lastIncidentId = null;
+        let incidentCountHistory = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            startPolling();
+        });
+
+        // Polling
+        function startPolling() {
+            pollIncidents();
+            setInterval(pollIncidents, 1000); // Poll every 1 second for real-time updates
+        }
+
+        async function pollIncidents() {
+            try {
+                const response = await fetch('/incidents');
+                const data = await response.json();
+                
+                if (data.incidents) {
+                    updateDashboard(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch incidents:', error);
+            }
+        }
+
+        function updateDashboard(data) {
+            const stats = data.stats || {};
+            const newIncidents = data.incidents || [];
+            const recentFixes = data.recentFixes || [];
+            
+            // Update stats cards
+            document.getElementById('totalIncidents').textContent = stats.total || 0;
+            document.getElementById('resolvedCount').textContent = stats.resolved || 0;
+            document.getElementById('pendingCount').textContent = stats.pending || 0;
+            
+            const total = stats.total || 0;
+            const resolved = stats.resolved || 0;
+            const percent = total > 0 ? Math.round((resolved / total) * 100) : 0;
+            document.getElementById('resolvedPercent').textContent = `${percent}%`;
+            
+            // Update AI confidence from actual data
+            const avgConf = stats.avgConfidence || 0;
+            document.getElementById('avgConfidence').textContent = `${avgConf}%`;
+            document.getElementById('aiConfidence').style.width = `${avgConf}%`;
+            
+            // Update incident type counters
+            document.getElementById('dbCount').textContent = stats.dbCount || 0;
+            document.getElementById('memCount').textContent = stats.memCount || 0;
+            document.getElementById('netCount').textContent = stats.netCount || 0;
+            
+            // Update status based on pending incidents
+            const statusEl = document.getElementById('systemStatus');
+            const statusText = document.getElementById('statusText');
+            if (stats.pending > 5) {
+                statusEl.className = 'status-indicator critical';
+                statusText.textContent = 'Critical Alert';
+            } else if (stats.pending > 0) {
+                statusEl.className = 'status-indicator degraded';
+                statusText.textContent = 'System Degraded';
+            } else {
+                statusEl.className = 'status-indicator';
+                statusText.textContent = 'System Healthy';
+            }
+            
+            // Update chart with pending count over time
+            incidentCountHistory.push(stats.pending || 0);
+            if (incidentCountHistory.length > 10) {
+                incidentCountHistory.shift();
+            }
+            chartData = [...incidentCountHistory];
+            while (chartData.length < 10) {
+                chartData.unshift(0);
+            }
+            updateChart();
+            
+            // Update recent fixes
+            if (recentFixes.length > 0) {
+                const fixesHtml = recentFixes.slice(0, 3).map(f => {
+                    const icon = '📋';
+                    const source = 'Pattern';
+                    return `<div style="margin-bottom: 0.5rem;">${icon} ${f.fix} (${Math.round(f.confidence * 100)}% ${source})</div>`;
+                }).join('');
+                document.getElementById('recentFixes').innerHTML = fixesHtml;
+            }
+            
+            // Update activity feed with new incidents
+            updateActivityFeed(newIncidents);
+        }
+
+        // Update activity feed with real incidents
+        function updateActivityFeed(newIncidents) {
+            const feed = document.getElementById('activityFeed');
+            
+            // Get the latest incident
+            if (newIncidents.length > 0 && newIncidents[0].id !== lastIncidentId) {
+                const incident = newIncidents[0];
+                lastIncidentId = incident.id;
+                
+                // Determine badge type
+                let badge = null;
+                if (incident.error?.includes('ERR_DB') || incident.error?.includes('DB_TIMEOUT')) {
+                    badge = 'db';
+                } else if (incident.error?.includes('ERR_MEM') || incident.error?.includes('MEM_LEAK')) {
+                    badge = 'memory';
+                } else if (incident.error?.includes('ERR_NET') || incident.error?.includes('NET_SPIKE')) {
+                    badge = 'network';
+                }
+                
+                // Add incident detected
+                const time = new Date(incident.timestamp).toLocaleTimeString();
+                addActivity('error', 'Incident detected', incident.error, badge, time);
+                
+                // Add fix proposed after a short delay
+                setTimeout(() => {
+                    const fixTime = new Date(incident.timestamp + 1000).toLocaleTimeString();
+                    addActivity('success', 'Fix proposed', 
+                        `${incident.fix} (${Math.round(incident.confidence * 100)}% confidence)`, 
+                        badge, fixTime);
+                }, 500);
+                
+                // Show modal for pending incidents
+                if (incident.status === 'pending') {
+                    setTimeout(() => showIncidentModal(incident), 1000);
+                }
+            }
+            
+            // Display all recent incidents
+            if (incidents.length === 0 && newIncidents.length > 0) {
+                incidents = newIncidents;
+                feed.innerHTML = '';
+                
+                newIncidents.slice(0, 10).forEach(incident => {
+                    const time = new Date(incident.timestamp).toLocaleTimeString();
+                    let badge = null;
+                    if (incident.error?.includes('ERR_DB') || incident.error?.includes('DB_TIMEOUT')) {
+                        badge = 'db';
+                    } else if (incident.error?.includes('ERR_MEM') || incident.error?.includes('MEM_LEAK')) {
+                        badge = 'memory';
+                    } else if (incident.error?.includes('ERR_NET') || incident.error?.includes('NET_SPIKE')) {
+                        badge = 'network';
+                    }
+                    
+                    const status = incident.status === 'resolved' ? 'success' : 'error';
+                    addActivity(status, 
+                        incident.status === 'resolved' ? 'Incident resolved' : 'Incident detected',
+                        incident.error, badge, time);
+                    
+                    if (incident.fix) {
+                        addActivity('success', 'Fix proposed', 
+                            `${incident.fix} (${Math.round(incident.confidence * 100)}% confidence)`, 
+                            badge, time);
+                    }
+                });
+            }
+        }
+        
+        // Add activity
+        function addActivity(type, title, desc, badge, time) {
+            const feed = document.getElementById('activityFeed');
+            if (!time) {
+                time = new Date().toLocaleTimeString();
+            }
+            
+            const item = document.createElement('div');
+            item.className = `activity-item ${type}`;
+            item.innerHTML = `
+                <div class="activity-time">${time}</div>
+                <div class="activity-content">
+                    <div class="activity-title">${title}</div>
+                    <div class="activity-desc">${desc}</div>
+                    ${badge ? `<span class="activity-badge badge-${badge}">${badge.toUpperCase()}</span>` : ''}
+                </div>
+            `;
+            
+            feed.insertBefore(item, feed.firstChild);
+            
+            // Keep only last 20 items
+            while (feed.children.length > 20) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
+
+        // Chart
+        function initChart() {
+            const chart = document.getElementById('incidentChart');
+            chartData.forEach((value, i) => {
+                const bar = document.createElement('div');
+                bar.className = 'chart-bar';
+                bar.dataset.value = value;
+                bar.style.height = '20px';
+                chart.appendChild(bar);
+            });
+        }
+
+        function updateChart() {
+            const bars = document.querySelectorAll('.chart-bar');
+            const max = Math.max(...chartData, 1);
+            bars.forEach((bar, i) => {
+                const height = (chartData[i] / max) * 100;
+                bar.style.height = `${Math.max(height, 5)}%`;
+                bar.dataset.value = chartData[i];
+            });
+        }
+
+        // Mock incident detection (integrate with your real events)
+        setTimeout(() => {
+            addActivity('', 'System initialized', 'All monitors active', null);
+        }, 1000);
+
+        // Listen for real incidents (you can integrate SSE or WebSocket here)
+        // For now, we'll use polling as a fallback
+        let lastIncidentCheck = Date.now();
+        setInterval(async () => {
+            // This is a simplified version - you would check actual incident state
+            // and trigger the modal when a new incident is detected
+        }, 3000);
+
+        // Modal functions
+        function showIncidentModal(incident) {
+            currentIncident = incident;
+            document.getElementById('modalError').textContent = incident.error;
+            document.getElementById('modalFix').textContent = incident.fix;
+            
+            const confidence = Math.round(incident.confidence * 100);
+            let source = '📋 Rule-Based';
+            if (incident.ai_source === 'gemini') {
+                source = '✨ Gemini AI';
+            } else if (incident.ai_source === 'openai') {
+                source = '🤖 OpenAI';
+            }
+            document.getElementById('modalConfidence').textContent = `${confidence}% (${source})`;
+            document.getElementById('incidentModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('incidentModal').classList.remove('active');
+            currentIncident = null;
+        }
+
+        async function executeFix() {
+            if (!currentIncident) return;
+            
+            try {
+                const response = await fetch('/admin/fix', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ incidentId: currentIncident.id })
+                });
+                
+                if (response.ok) {
+                    addActivity('success', 'Fix executed', `${currentIncident.fix} applied successfully`, 
+                        currentIncident.error.includes('DB') ? 'db' : 
+                        currentIncident.error.includes('MEM') ? 'memory' : 'network');
+                    closeModal();
+                }
+            } catch (error) {
+                console.error('Failed to execute fix:', error);
+            }
+        }
+
+        // Initial message
+        setTimeout(() => {
+            const feed = document.getElementById('activityFeed');
+            feed.innerHTML = '<div class="activity-item"><div class="activity-time">' + 
+                new Date().toLocaleTimeString() + 
+                '</div><div class="activity-content"><div class="activity-title">System initialized</div>' +
+                '<div class="activity-desc">Monitoring for incidents...</div></div></div>';
+        }, 500);
+    </script>
+</body>
+</html>

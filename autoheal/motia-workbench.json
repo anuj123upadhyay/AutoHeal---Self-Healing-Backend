@@ -1,0 +1,43 @@
+[
+  {
+    "id": "self-healing",
+    "config": {
+      "steps/monitor.step.ts": {
+        "x": 0,
+        "y": 2
+      },
+      "steps/metrics.step.ts": {
+        "x": 22,
+        "y": 222
+      },
+      "steps/incidents_api.step.ts": {
+        "x": 0,
+        "y": 874
+      },
+      "steps/execute_auto.step.ts": {
+        "x": 700,
+        "y": 0
+      },
+      "steps/execute.step.ts": {
+        "x": -8,
+        "y": 440
+      },
+      "steps/dashboard.step.ts": {
+        "x": 0,
+        "y": 426
+      },
+      "steps/completion.step.ts": {
+        "x": 1050,
+        "y": 105
+      },
+      "steps/chaos.step.ts": {
+        "x": 0,
+        "y": 650
+      },
+      "steps/analyse_step.py": {
+        "x": 350,
+        "y": 34
+      }
+    }
+  }
+]

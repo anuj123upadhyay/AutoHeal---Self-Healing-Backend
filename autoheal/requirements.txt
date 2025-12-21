@@ -1,0 +1,3 @@
+# AutoHeal dependencies
+# Currently using built-in Python modules only - no external dependencies required
+

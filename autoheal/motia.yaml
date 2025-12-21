@@ -1,0 +1,10 @@
+name: autoheal
+version: 1.0.0
+
+# This wildcard loads ANY .ts or .py file in the steps folder
+steps:
+  - steps/**/*.{ts,py,js} 
+
+static:
+  - route: /
+    path: ./public
