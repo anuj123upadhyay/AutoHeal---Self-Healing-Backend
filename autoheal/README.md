@@ -57,7 +57,13 @@ An intelligent self-healing platform built on **Motia** that automatically detec
 ---
 ## ✨ Youtube Demo
 
-https://youtu.be/ayxZX9F-a3I
+<div align="center">
+  
+[![Watch AutoHeal Demo](https://img.youtube.com/vi/ayxZX9F-a3I/maxresdefault.jpg)](https://www.youtube.com/watch?v=ayxZX9F-a3I)
+
+**Click to watch the 6-minute demonstration**
+
+</div>
 
 
 ---
