@@ -56,7 +56,7 @@ An intelligent self-healing platform built on **Motia** that automatically detec
 ---
 ## ✨ Youtube Video
 
-![Youtube Video](https://youtu.be/ayxZX9F-a3I)
+https://youtu.be/ayxZX9F-a3I
 
 
 ---
