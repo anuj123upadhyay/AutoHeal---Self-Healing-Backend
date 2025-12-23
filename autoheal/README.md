@@ -15,6 +15,7 @@ An intelligent self-healing platform built on **Motia** that automatically detec
 
 - [Why AutoHeal?](#-why-autoheal)
 - [Motia Workbench Flow](#-motia-workbench-flow)
+- [Youtube Demo](#-youtube-demo)
 - [Key Features](#-key-features)
 - [Quick Start](#-quick-start)
 - [How It Works](#️-how-it-works---the-4-step-workflow)
@@ -54,7 +55,7 @@ An intelligent self-healing platform built on **Motia** that automatically detec
 ![Motia Workbench Flow](public/motia-workbench.png)
 
 ---
-## ✨ Youtube Video
+## ✨ Youtube Demo
 
 https://youtu.be/ayxZX9F-a3I
 
